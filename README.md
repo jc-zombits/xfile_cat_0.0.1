@@ -5,6 +5,7 @@
 
 ### Características Principales 🚀
   1. **Autenticación de usuarios:** Los usuarios pueden registrarse e iniciar sesión con `nombre, rol, email. contraseña`.
+  
   2. **Gesatión de archivos:**
       - Menú desplegable para seleccionar el tipo de archivo (XLSX o CSV).
       - Menú adicional con opciones:
@@ -14,9 +15,11 @@
           - Editar
           - Eliminar
       - Posibilidad de arrastrar y soltar archivos o seleccionarlos manualmente desde el explorador de archivos.
+  
   3. **Visualización y comparación de archivos:**
        - Soporte para múltiples archivos simultáneamente (XLSX, CSV o combinación de ambos).
        - Comparación de datos entre archivos para identificar diferencias en los registros.
+  
   4. **Validación e inserción en PostgreSQL:**
        - Una vez subido el archivo, la aplicación validará que los campos cumplen con el formato esperado.
        - En caso de errores, se notificará al usuario para corregirlos.
