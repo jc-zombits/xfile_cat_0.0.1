@@ -1,0 +1,16 @@
+# 🚫 Ignorar node_modules en cualquier parte del proyecto
+node_modules/
+**/node_modules/
+
+# 🚫 Ignorar dependencias generadas por Next.js
+.next/
+
+# 🚫 Ignorar variables de entorno
+.env
+.env.local
+.env.development.local
+.env.production.local
+
+# 🚫 Ignorar logs y archivos del sistema
+*.log
+.DS_Store
