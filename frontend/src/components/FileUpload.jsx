@@ -2,20 +2,18 @@ import React, { useState } from "react";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
 
-const FileUpload = ({ onFileUpload }) => {
+const FileUpload = () => {
   const [file, setFile] = useState(null);
   const [progress, setProgress] = useState(0);
   const [previewData, setPreviewData] = useState([]);
-  const [sheets, setSheets] = useState([]); // Lista de hojas disponibles
-  const [selectedSheet, setSelectedSheet] = useState(""); // Hoja seleccionada
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState([]); // 📌 Lista de archivos subidos
+  const [selectedFile, setSelectedFile] = useState(null); // 📌 Archivo seleccionado de la lista
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     setFile(selectedFile);
-    setPreviewData([]);
-    setSheets([]);
-    setSelectedSheet("");
+    setPreviewData([]); // Resetea la vista previa al cambiar de archivo
   };
 
   const handleUpload = () => {
@@ -33,6 +31,13 @@ const FileUpload = ({ onFileUpload }) => {
           clearInterval(fakeUpload);
           processFile(file);
           setIsUploading(false);
+
+          // 📌 Guardamos el archivo en la lista si no está duplicado
+          setUploadedFiles((prevFiles) => {
+            const exists = prevFiles.some((f) => f.name === file.name);
+            return exists ? prevFiles : [...prevFiles, file];
+          });
+
           return 100;
         }
         return prev + 10;
@@ -53,40 +58,29 @@ const FileUpload = ({ onFileUpload }) => {
           },
           header: true,
         });
-      } else if (file.name.endsWith(".xlsx")) {
+      } else if (file.name.endsWith(".xlsx") || file.name.endsWith(".xlsm")) {
         const workbook = XLSX.read(fileContent, { type: "binary" });
-        const sheetNames = workbook.SheetNames; // Lista de hojas
-        setSheets(sheetNames);
-        setSelectedSheet(sheetNames[0]); // Seleccionar la primera hoja por defecto
-        updateSheetPreview(workbook, sheetNames[0]);
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        setPreviewData(data);
       }
     };
 
     if (file.name.endsWith(".csv")) {
       reader.readAsText(file);
-    } else if (file.name.endsWith(".xlsx")) {
+    } else {
       reader.readAsBinaryString(file);
     }
   };
 
-  const updateSheetPreview = (workbook, sheetName) => {
-    const sheet = workbook.Sheets[sheetName];
-    const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-    setPreviewData(data);
-  };
-
-  const handleSheetChange = (e) => {
-    const newSheet = e.target.value;
-    setSelectedSheet(newSheet);
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const fileContent = event.target.result;
-      const workbook = XLSX.read(fileContent, { type: "binary" });
-      updateSheetPreview(workbook, newSheet);
-    };
-
-    reader.readAsBinaryString(file);
+  const handleFileSelect = (e) => {
+    const fileName = e.target.value;
+    const selected = uploadedFiles.find((f) => f.name === fileName);
+    setSelectedFile(selected);
+    if (selected) {
+      processFile(selected);
+    }
   };
 
   return (
@@ -97,7 +91,7 @@ const FileUpload = ({ onFileUpload }) => {
       <input
         type="file"
         id="file-input"
-        accept=".csv, .xlsx"
+        accept=".csv, .xlsx, .xlsm"
         onChange={handleFileChange}
         className="file-input"
       />
@@ -113,13 +107,14 @@ const FileUpload = ({ onFileUpload }) => {
         </div>
       )}
 
-      {sheets.length > 1 && (
-        <div className="sheet-selector">
-          <label>Selecciona una hoja:</label>
-          <select value={selectedSheet} onChange={handleSheetChange}>
-            {sheets.map((sheet, index) => (
-              <option key={index} value={sheet}>
-                {sheet}
+      {uploadedFiles.length > 0 && (
+        <div className="file-selector">
+          <label>Archivos Subidos:</label>
+          <select onChange={handleFileSelect} value={selectedFile ? selectedFile.name : ""}>
+            <option value="">Selecciona un archivo</option>
+            {uploadedFiles.map((file, index) => (
+              <option key={index} value={file.name}>
+                {file.name}
               </option>
             ))}
           </select>
@@ -129,7 +124,7 @@ const FileUpload = ({ onFileUpload }) => {
       {previewData.length > 0 && (
         <div className="preview-table">
           <h3>Vista previa del archivo:</h3>
-          <div className="scrollable-container">
+          <div className="table-wrapper">
             <table>
               <thead>
                 <tr>

@@ -24,7 +24,7 @@ export default function Home() {
     <div>
       <Navbar />
       <div className="container">
-        <h1>XFile Cat 0.0.1</h1>
+        <h1 className="bg-gradient-to-r from-amber-200 to-yellow-400 rounded">XFile Cat_0.0.1</h1>
         <p>{message}</p>
         <div className="upload-section">
           <FileUpload onFileUpload={handleFileUpload} />
