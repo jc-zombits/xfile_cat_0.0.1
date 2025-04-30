@@ -1,30 +1,83 @@
 const express = require("express");
-const multer = require("multer");
-const XLSX = require("xlsx");
 const router = express.Router();
+const XLSX = require("xlsx");
+const fileController = require('../controllers/fileController');
+const upload = require('../middleware/upload');
 
-// Configurar multer para la carga de archivos
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+// Ruta para subir y guardar en PostgreSQL
+router.post('/upload-to-db', (req, res) => {
+  upload(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ 
+        success: false, 
+        error: err.message 
+      });
+    }
+    
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "No se subió ningún archivo" 
+      });
+    }
 
-router.post("/upload", upload.single("file"), (req, res) => {
+    try {
+      const result = await fileController.uploadFileToDB(req, res);
+      return res.json(result);
+    } catch (error) {
+      console.error("Error en la ruta:", error);
+      return res.status(500).json({ 
+        success: false, 
+        error: "Error al procesar el archivo",
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  });
+});
+
+// Ruta para procesamiento rápido (solo visualización)
+router.post("/upload", upload, async (req, res) => {
   if (!req.file) {
-    return res.status(400).send("No file uploaded.");
+    return res.status(400).json({ 
+      success: false,
+      error: "No se subió ningún archivo" 
+    });
   }
 
-  // Procesar el archivo cargado
-  const file = req.file;
-  if (file.mimetype === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
-    const workbook = XLSX.read(file.buffer, { type: "buffer" });
-    // Aquí puedes manejar el contenido del archivo Excel
-    console.log(workbook);
-    res.status(200).send("Archivo Excel recibido y procesado.");
-  } else if (file.mimetype === "text/csv") {
-    // Procesar archivo CSV
-    console.log(file.buffer.toString());
-    res.status(200).send("Archivo CSV recibido y procesado.");
-  } else {
-    res.status(400).send("Archivo no compatible. Solo se permiten CSV y XLSX.");
+  try {
+    const file = req.file;
+    let processedData = null;
+
+    if (file.mimetype === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
+      const workbook = XLSX.read(file.buffer, { type: "buffer" });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      processedData = XLSX.utils.sheet_to_json(firstSheet);
+    } 
+    else if (file.mimetype === "text/csv") {
+      processedData = file.buffer.toString();
+    } 
+    else {
+      return res.status(400).json({ 
+        success: false,
+        error: "Formato de archivo no compatible. Solo se permiten Excel (.xlsx, .xls) y CSV" 
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: processedData,
+      message: "Archivo procesado correctamente",
+      fileName: req.file.originalname,
+      fileType: req.file.mimetype
+    });
+
+  } catch (error) {
+    console.error("Error al procesar archivo:", error);
+    return res.status(500).json({ 
+      success: false,
+      error: "Error al procesar el archivo",
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 

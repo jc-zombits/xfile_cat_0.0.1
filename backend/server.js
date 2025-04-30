@@ -1,18 +1,19 @@
 const app = require("./app");
-const express = require('express');
-//const app = express();
-const port = 3001;
+const port = process.env.PORT || 3001;
 
+// Elimina estas líneas redundantes:
+// const express = require('express');
+// const app = express();
 
-// Middleware to parse JSON bodies
-app.use(express.json());
+// Verificar conexión a la base de datos
+const db = require('./src/config/db');
+db.pool.query('SELECT NOW()')
+  .then(() => console.log('✔ PostgreSQL conectado'))
+  .catch(err => {
+    console.error('✖ Error de conexión a PostgreSQL:', err);
+    process.exit(1);
+  });
 
-// Endpoint de prueba
-app.get('/', (req, res) => {
-    res.send("Hello from Express!");
-})
-
-// Iniciar el servidor
 app.listen(port, () => {
-    console.log(`Server is running at http://localhost:${port}`);
-})
+  console.log(`Servidor corriendo en http://localhost:${port}`);
+});
