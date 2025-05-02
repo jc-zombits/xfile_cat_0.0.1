@@ -6,7 +6,7 @@ const app = express();
 
 // Middleware
 app.use(express.json());
-app.use(cors({ origin: "http://localhost:3000" }));
+app.use(cors({ origin: "https://tu-frontend-en-produccion.vercel.app" }));
 
 // Importar rutas
 const testRoutes = require("./src/routes/testRoutes");
